@@ -1,0 +1,27 @@
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: db-backup
+spec:
+  schedule: "0 2 * * *" # Run daily at 2 AM UTC
+  jobTemplate:
+    spec:
+      template:
+        spec:
+          restartPolicy: OnFailure
+          containers:
+          - name: db-backup
+            image: postgres:13-alpine # Use an image with pg_dump
+            envFrom:
+            - secretRef:
+                name: db-backup-secrets # Contains DB and S3 credentials
+            command: ["/bin/sh", "-c"]
+            args:
+            - |
+              apk add --no-cache aws-cli; # Install AWS CLI
+              # Your backup script content or a mounted script
+              FILENAME="backup-$(date +%Y-%m-%dT%H-%M-%S).sql.gz";
+              S3_TARGET="s3://${S3_BUCKET_NAME}/${FILENAME}";
+              echo "Backing up database to ${S3_TARGET}";
+              pg_dump -h "${POSTGRES_HOST}" -U "${POSTGRES_USER}" "${POSTGRES_DB}" | gzip | aws s3 cp - "${S3_TARGET}";
+              echo "Backup complete.";
