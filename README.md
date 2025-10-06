@@ -126,14 +126,6 @@ The architecture is designed for a cloud-native environment:
 
 * **DAutomation:** The CI/CD pipeline automatically builds a new Docker image on every push to the main branch and deploys it to the cluster using Helm.
 
-Local Development Setup (Minikube):
-
-Follow these steps to run the entire stack on your local machine.
-
-Prerequisites
-**Docker**
-**Git**
-
 
 ## File Contents
 .github/workflows/cd.yml
@@ -359,3 +351,154 @@ This ensures data safety and disaster recovery.
 
 - **pg_dump Script**:  
   The CronJob runs a pod containing a script that connects to the PostgreSQL database, performs a full backup using `pg_dump`, and uploads the compressed backup file to a secure, external location like an **S3 bucket**.
+
+
+## how to run
+
+
+# Local Development Setup 🚀
+
+Follow these steps to run the entire stack on your local machine using **Minikube**.
+
+---
+
+## Prerequisites
+
+Ensure you have the following tools installed locally:
+
+- **Docker Engine** 
+- **Git**
+- **Minikube** (v1.25.0 or later)
+
+
+## 1.Install Minikube
+Minikube is typically installed as a standalone binary.
+
+```bash
+# Download the latest Minikube binary
+curl -LO https://storage.googleapis.com/minikube/releases/latest/minikube-linux-amd64
+
+# Install it to your user's local bin path
+sudo install minikube-linux-amd64 /usr/local/bin/minikube
+```
+## 2.Install kubectl
+You can install kubectl, the Kubernetes command-line tool, using your system's package manager.
+```bash
+# Update your apt package index
+sudo apt-get update
+
+# Install packages to allow apt to use a repository over HTTPS
+sudo apt-get install -y apt-transport-https ca-certificates curl
+
+# Download the public signing key for the Kubernetes package repositories
+curl -fsSL https://pkgs.k8s.io/core:/stable:/v1.28/deb/Release.key | sudo gpg --dearmor -o /etc/apt/keyrings/kubernetes-apt-keyring.gpg
+
+# Add the appropriate Kubernetes apt repository
+echo 'deb [signed-by=/etc/apt/keyrings/kubernetes-apt-keyring.gpg] https://pkgs.k8s.io/core:/stable:/v1.28/deb/ /' | sudo tee /etc/apt/sources.list.d/kubernetes.list
+
+# Update apt package index with the new repository and install kubectl
+sudo apt-get update
+sudo apt-get install -y kubectl
+
+```
+## 3.Install Helm 
+```bash
+# Download and run the installer script
+curl https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 | bash
+```
+After running these commands, you can verify each installation by running minikube version, kubectl version --client, and helm version.
+
+
+## Configure Environment
+First, ensure Docker Desktop is running and has at least 8 GB of memory allocated in its Settings > Resources.
+
+Then, start your Minikube cluster and enable the required addons.
+```bash
+# Start Minikube with a stable Kubernetes version
+minikube start --memory=8192 --cpus=4 --kubernetes-version=stable
+
+# Enable the Ingress controller
+minikube addons enable ingress
+```
+
+
+## Deploy Dependencies
+Use Helm to install PostgreSQL and the monitoring stack into your cluster.
+
+```bash
+# Install PostgreSQL
+helm repo add bitnami https://charts.bitnami.com/bitnami
+helm install postgresql bitnami/postgresql \
+  --set auth.postgresPassword=SUPER_SECRET_PASSWORD \
+  --set auth.database=crypto_db \
+  --set auth.username=crypto_user
+
+# Install Prometheus & Grafana
+helm repo add prometheus-community https://prometheus-community.github.io/helm-charts
+helm install prometheus prometheus-community/kube-prometheus-stack \
+  --namespace monitoring --create-namespace
+```
+
+##  Deploy the Application
+Build the application's Docker image locally and deploy it.
+
+```bash
+# Point your terminal to Minikube's Docker daemon
+eval $(minikube -p minikube docker-env)
+```
+
+## Clone the below project and navigate to the 'app' directory
+
+```bash
+git clone https://github.com/sharare-sadri/CryptoCurrency-exchange.git
+cd CryptoCurrency-exchange
+```
+
+# Build the image from the 'app' directory
+docker build -t crypto-exchange:local-dev ./app
+
+# Deploy the application using our Helm chart
+helm upgrade --install crypto-exchange ./charts/crypto-exchange \
+  --set image.repository=crypto-exchange \
+  --set image.tag=local-dev \
+  --set image.pullPolicy=IfNotPresent \
+  --set "ingress.hosts[0].host=crypto.minikube" \
+  --set-string secrets.djangoSecretKey='a-very-strong-and-random-secret-key-for-local-dev' \
+  --set-string secrets.dbPassword='SUPER_SECRET_PASSWORD'
+  ```
+
+##  Access the Services
+Get Minikube IP: Find your cluster's IP address with minikube ip.
+
+Update Hosts File: Add the following line to your /etc/hosts file:
+
+```bash
+<MINIKUBE_IP>   crypto.minikube
+```
+127.0.0.1 crypto.minikube
+
+# Accessing the Application & Monitoring Tools 🌐
+
+---
+
+## Access the Application
+Open your browser and navigate to:  
+👉 **[http://crypto.minikube](http://crypto.minikube)**
+
+---
+
+## Access Grafana
+Run the following command to port-forward the Grafana service:
+
+```bash
+kubectl port-forward svc/prometheus-grafana 8080:80 -n monitoring
+```
+
+Then open your browser and go to:
+👉 http://localhost:8080
+
+Default Login Credentials:
+
+Username: admin
+
+Password: prom-operator
