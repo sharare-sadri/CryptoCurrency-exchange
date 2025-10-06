@@ -1,0 +1,31 @@
+replicaCount: 2
+
+image:
+  repository: your-dockerhub-username/crypto-exchange
+  pullPolicy: IfNotPresent
+  tag: "" # This will be overridden by the CI/CD pipeline
+
+service:
+  type: ClusterIP
+  port: 8000
+
+ingress:
+  enabled: true
+  className: "nginx"
+  hosts:
+    - host: crypto.example.com
+      paths:
+        - path: /
+          pathType: ImplementationSpecific
+
+# We pass secrets from the CI/CD pipeline, not storing them here.
+secrets:
+  djangoSecretKey: ""
+  dbPassword: ""
+
+# Database connection details
+database:
+  host: "postgresql-service.default.svc.cluster.local"
+  port: "5432"
+  user: "crypto_user"
+  name: "crypto_db"
