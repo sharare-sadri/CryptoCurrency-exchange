@@ -22,6 +22,11 @@ spec:
             - name: http
               containerPort: 8000
               protocol: TCP
+          command: ["gunicorn"]
+          args:
+            - "--bind"
+            - "0.0.0.0:8000"
+            - "CryptoCurrencyExchange.wsgi"
           env:
             - name: DJANGO_SECRET_KEY
               valueFrom:
@@ -36,12 +41,5 @@ spec:
                   name: {{ include "crypto-exchange.fullname" . }}-secrets
                   key: dbPassword
             - name: DJANGO_ALLOWED_HOSTS
-              value: "{{ .Values.ingress.hosts[0].host }},localhost,127.0.0.1"
-          livenessProbe:
-            httpGet:
-              path: /
-              port: http
-          readinessProbe:
-            httpGet:
-              path: /
-              port: http
+              # Using a template function to ensure this line is parsed correctly
+              value: {{ printf "%s,localhost,127.0.0.1" (first .Values.ingress.hosts).host }}

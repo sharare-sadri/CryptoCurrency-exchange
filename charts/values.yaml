@@ -1,9 +1,9 @@
 replicaCount: 2
 
 image:
-  repository: your-dockerhub-username/crypto-exchange
+  repository: sharare-sadri/crypto-exchange
   pullPolicy: IfNotPresent
-  tag: "" # This will be overridden by the CI/CD pipeline
+  tag: "0.0.1" 
 
 service:
   type: ClusterIP
@@ -20,8 +20,8 @@ ingress:
 
 # We pass secrets from the CI/CD pipeline, not storing them here.
 secrets:
-  djangoSecretKey: ""
-  dbPassword: ""
+  djangoSecretKey: "Wyy4ZwsMLW-Uoc-fMJLLTFisnJj7gM8ZWp0dkySs1x1HlpJpvIAhCElaxM7pO8HXIlU"
+  dbPassword: "P@ssw0rd123%"
 
 # Database connection details
 database:
