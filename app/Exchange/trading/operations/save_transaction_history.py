@@ -1,4 +1,4 @@
-from ..models import TradingHistory
+from ....CryptoExchange.models import TradingHistory
 from django.contrib.auth.models import User
 from wallet.models.token import Token
 import datetime

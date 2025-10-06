@@ -1,4 +1,4 @@
-from ..models import TradingHistory
+from ....CryptoExchange.models import TradingHistory
 
 
 def get_history_transaction(token_pk: int, user_pk: int) -> list[TradingHistory]:
