@@ -1,9 +1,12 @@
+# =========================
+# Django Application Values
+# =========================
 replicaCount: 2
 
 image:
   repository: your-dockerhub-username/crypto-exchange
   pullPolicy: IfNotPresent
-  tag: "0.0.1" 
+  tag: "0.0.1"
 
 service:
   type: ClusterIP
@@ -18,32 +21,39 @@ ingress:
         - path: /
           pathType: ImplementationSpecific
 
-# We pass secrets from the CI/CD pipeline, not storing them here.
+# Secrets for Django
 secrets:
   djangoSecretKey: "Wyy4ZwsMLW-Uoc-fMJLLTFisnJj7gM8ZWp0dkySs1x1HlpJpvIAhCElaxM7pO8HXIlU"
   dbPassword: "P@ssw0rd123%"
 
-# Default values for postgres-custom.
-appName: postgres
-replicaCount: 1
-
-image:
-  repository: postgres
-  tag: "15-alpine"
-  pullPolicy: IfNotPresent
-
-storage:
-  className: "standard" # Use 'standard' for Minikube default hostpath
-  size: 1Gi
-
-auth:
-  username: crypto_user
-  database: crypto_db
-  # In production, password should come from an external Secret, not here in plain text
-  password: SUPER_SECRET_PASSWORD
-
-service:
+# Database connection details for Django to use
+database:
+  host: postgres-service # Must match the service name defined below
   port: 5432
+  user: crypto_user
+  name: crypto_db
 
-
+# =========================
+# PostgreSQL Custom Values
+# =========================
+postgres:
+  enabled: true
+  appName: postgres
+  replicaCount: 1
   
+  image:
+    repository: postgres
+    tag: "15-alpine"
+    pullPolicy: IfNotPresent
+
+  storage:
+    className: "standard"
+    size: 1Gi
+
+  auth:
+    username: crypto_user
+    database: crypto_db
+    password: SUPER_SECRET_PASSWORD
+
+  service:
+    port: 5432
