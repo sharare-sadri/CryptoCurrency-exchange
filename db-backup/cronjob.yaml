@@ -3,7 +3,7 @@ kind: CronJob
 metadata:
   name: db-backup
 spec:
-  schedule: "0 2 * * *" # Run daily at 2 AM UTC
+  schedule: "0 2 * * *"
   jobTemplate:
     spec:
       template:
@@ -11,17 +11,30 @@ spec:
           restartPolicy: OnFailure
           containers:
           - name: db-backup
-            image: postgres:13-alpine # Use an image with pg_dump
+            image: bitnami/postgresql:latest
+            securityContext:
+               runAsUser: 0 # Temporarily run as root to ensure we can write to the mounted volume easily
             envFrom:
             - secretRef:
-                name: db-backup-secrets # Contains DB and S3 credentials
+                name: db-backup-secrets
+            volumeMounts:
+            - mountPath: /backups
+              name: backup-storage
             command: ["/bin/sh", "-c"]
             args:
             - |
-              apk add --no-cache aws-cli; # Install AWS CLI
-              # Your backup script content or a mounted script
-              FILENAME="backup-$(date +%Y-%m-%dT%H-%M-%S).sql.gz";
-              S3_TARGET="s3://${S3_BUCKET_NAME}/${FILENAME}";
-              echo "Backing up database to ${S3_TARGET}";
-              pg_dump -h "${POSTGRES_HOST}" -U "${POSTGRES_USER}" "${POSTGRES_DB}" | gzip | aws s3 cp - "${S3_TARGET}";
-              echo "Backup complete.";
+              set -e
+              DATE=$(date +%Y-%m-%dT%H-%M-%S)
+              FILENAME="/backups/backup-${DATE}.sql.gz"
+
+              echo "Starting local backup to ${FILENAME}..."
+              
+              # Dump database and compress directly to the mounted volume
+              PGPASSWORD="$POSTGRES_PASSWORD" pg_dump -h "$POSTGRES_HOST" -U "$POSTGRES_USER" -d "$POSTGRES_DB" | gzip > "$FILENAME"
+              
+              echo "Backup successfully saved locally to ${FILENAME}"
+              ls -lh $FILENAME
+          volumes:
+          - name: backup-storage
+            persistentVolumeClaim:
+              claimName: backup-pvc

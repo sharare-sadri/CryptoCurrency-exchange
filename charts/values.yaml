@@ -1,3 +1,4 @@
+fullnameOverride: "crypto-exchange"
 # =========================
 # Django Application Values
 # =========================
@@ -15,8 +16,13 @@ service:
 ingress:
   enabled: true
   className: "nginx"
+  annotations:
+    # Tell NGINX to wait longer for Django to respond
+    nginx.ingress.kubernetes.io/proxy-connect-timeout: "300"
+    nginx.ingress.kubernetes.io/proxy-read-timeout: "300"
+    nginx.ingress.kubernetes.io/proxy-send-timeout: "300"
   hosts:
-    - host: crypto.example.com
+    - host: crypto.minikube
       paths:
         - path: /
           pathType: ImplementationSpecific
@@ -53,7 +59,7 @@ postgres:
   auth:
     username: crypto_user
     database: crypto_db
-    password: SUPER_SECRET_PASSWORD
+    password: Str0ng!P@ssw0rd_2025
 
   service:
     port: 5432
