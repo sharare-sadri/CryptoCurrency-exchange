@@ -14,18 +14,4 @@ spec:
   selector:
     {{- include "crypto-exchange.selectorLabels" . | nindent 4 }}
 
----
-apiVersion: v1
-kind: Service
-metadata:
-  name: {{ .Values.appName }}
-spec:
-  type: ClusterIP
-  ports:
-    - port: {{ .Values.service.port }}
-      targetPort: postgresql
-      protocol: TCP
-      name: postgresql
-  selector:
-    app: {{ .Values.appName }}
-    
+

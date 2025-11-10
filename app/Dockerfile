@@ -1,29 +1,38 @@
-# Stage 1: Build stage with dependencies
-FROM python:3.9-slim as builder
+# Use a newer Debian base (Bookworm) to guarantee recent libpq versions
+FROM python:3.9-slim-bookworm AS builder
 
 WORKDIR /usr/src/app
 
-ENV PYTHONDONTWRITEBYTECODE 1
-ENV PYTHONUNBUFFERED 1
+ENV PYTHONDONTWRITEBYTECODE=1
+ENV PYTHONUNBUFFERED=1
 
-RUN apt-get update && apt-get install -y --no-install-recommends gcc build-essential libpq-dev
+# Install build dependencies
+# We need libpq-dev to compile psycopg2 from source
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    gcc \
+    build-essential \
+    libpq-dev \
+    && rm -rf /var/lib/apt/lists/*
 
 COPY requirements.txt .
 RUN pip wheel --no-cache-dir --wheel-dir /usr/src/app/wheels -r requirements.txt
 
-# Stage 2: Final production stage
-FROM python:3.9-slim
+# Final stage also uses Bookworm
+FROM python:3.9-slim-bookworm
 
 WORKDIR /usr/src/app
 
-# Copy pre-built wheels from the builder stage
+# Install standard runtime libraries.
+# libpq5 in Bookworm is fully SCRAM-compatible.
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    libpq5 \
+    && rm -rf /var/lib/apt/lists/*
+
 COPY --from=builder /usr/src/app/wheels /wheels
 COPY requirements.txt .
 RUN pip install --no-cache /wheels/*
 
-# Copy application code
 COPY . .
 
-# Gunicorn will be the entrypoint
 EXPOSE 8000
 CMD ["gunicorn", "--bind", "0.0.0.0:8000", "CryptoCurrencyExchange.wsgi"]

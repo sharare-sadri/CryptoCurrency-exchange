@@ -12,3 +12,12 @@ sqlparse==0.4.3
 urllib3==1.26.12
 gunicorn==20.1.0
 psycopg2-binary==2.9.3
+python-dotenv==0.21.0
+djangorestframework==3.14.0
+django-extensions==3.2.1
+django-q==1.3.9
+bitcoin
+eth-account
+plotly
+django-credit-cards
+dj-database-url

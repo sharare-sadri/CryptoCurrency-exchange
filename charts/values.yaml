@@ -1,10 +1,10 @@
 # =========================
 # Django Application Values
 # =========================
-replicaCount: 2
+replicaCount: 1
 
 image:
-  repository: your-dockerhub-username/crypto-exchange
+  repository: shararehsadri/crypto-exchange
   pullPolicy: IfNotPresent
   tag: "0.0.1"
 
@@ -28,7 +28,7 @@ secrets:
 
 # Database connection details for Django to use
 database:
-  host: postgres-service # Must match the service name defined below
+  host: postgresql  
   port: 5432
   user: crypto_user
   name: crypto_db
