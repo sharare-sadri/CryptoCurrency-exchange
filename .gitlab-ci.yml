@@ -1,60 +1,69 @@
-# Define the stages of the pipeline
 stages:
+  - lint  # <-- ADDED THIS STAGE FIRST
   - build
   - deploy
 
-# Define variables that will be available to all jobs
 variables:
-  # The Docker image name and tag format
-  DOCKER_IMAGE_NAME: $CI_REGISTRY_IMAGE/crypto-exchange
+  DOCKER_HUB_REPOSITORY: shararehsadri/crypto-exchange
   DOCKER_IMAGE_TAG: $CI_COMMIT_SHORT_SHA
-  
-  # Helm deployment details
   HELM_RELEASE_NAME: crypto-exchange
   KUBE_NAMESPACE: default
 
-# Job 1: Build the Docker image and push it to GitLab's container registry
-build-image:
-  stage: build
-  # Use GitLab's recommended Docker-in-Docker service to build images
-  image: docker:24.0.5
-  services:
-    - docker:24.0.5-dind
-  
-  before_script:
-    # Log in to the GitLab container registry using predefined CI/CD variables
-    - docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY
-  
-  script:
-    # Build the Docker image from the 'app' directory
-    - docker build -t $DOCKER_IMAGE_NAME:$DOCKER_IMAGE_TAG ./app
-    # Push the image to the registry
-    - docker push $DOCKER_IMAGE_NAME:$DOCKER_IMAGE_TAG
-    
-  # This job only runs on pushes to the 'main' branch
-  rules:
-    - if: '$CI_COMMIT_BRANCH == "main"'
-
-# Job 2: Deploy the application to Kubernetes using Helm
-deploy-to-cluster:
-  stage: deploy
-  # Use an image that contains both kubectl and helm
+# Job 1: Lint the Helm Chart
+helm-lint:
+  stage: lint
   image:
     name: bitnami/kubectl:latest
     entrypoint: [""]
   
   script:
-    # Configure kubectl using the KUBECONFIG variable (must be set in GitLab CI/CD settings)
-    - export KUBECONFIG=$KUBE_CONFIG
+    - echo "Linting Helm chart..."
+    # Runs lint on the chart located in the ./charts/crypto-exchange directory
+    - helm lint ./charts
+  
+  # Run this on all pushes
+  rules:
+    - if: '$CI_COMMIT_BRANCH == "main"'
+
+# Job 2: Build on 'main' branch
+build-image:
+  stage: build
+  image: docker:24.0.5
+  services:
+    - docker:24.0.5-dind
+  
+  before_script:
+    - echo $DOCKERHUB_TOKEN | docker login -u $DOCKERHUB_USERNAME --password-stdin
+  
+  script:
+    - echo "Building and pushing image"
+    - ${DOCKER_HUB_REPOSITORY}:${DOCKER_IMAGE_TAG}"
+    - docker build --no-cache -t ${DOCKER_HUB_REPOSITORY}:${DOCKER_IMAGE_TAG} ./app
+    - docker push ${DOCKER_HUB_REPOSITORY}:${DOCKER_IMAGE_TAG}
     
-    # Install or upgrade the Helm chart
-    - helm upgrade --install $HELM_RELEASE_NAME ./charts/crypto-exchange \
+  # This job will ONLY run if the 'lint' job succeeds
+  # AND it's on the 'main' branch
+  rules:
+    - if: '$CI_COMMIT_BRANCH == "main"'
+
+# Job 3: Deploy ONLY on 'main' branch
+deploy-to-cluster:
+  stage: deploy
+  image:
+    name: bitnami/kubectl:latest
+    entrypoint: [""]
+  
+  script:
+    - export KUBECONFIG=$KUBE_CONFIG
+    - helm upgrade --install $HELM_RELEASE_NAME ./charts \
       --namespace $KUBE_NAMESPACE \
-      --set image.repository=$DOCKER_IMAGE_NAME \
-      --set image.tag=$DOCKER_IMAGE_TAG \
+      --set image.repository=${DOCKER_HUB_REPOSITORY} \
+      --set image.tag=${DOCKER_IMAGE_TAG} \
       --set-string secrets.djangoSecretKey="$DJANGO_SECRET_KEY" \
-      --set-string secrets.dbPassword="$DB_PASSWORD"
+      --set-string secrets.dbPassword="$DB_PASSWORD" \
+      --set database.host=mydb-postgresql
       
-  # This job only runs on pushes to the 'main' branch
+  # This job will ONLY run if 'build-image' succeeds
+  # AND it's on the 'main' branch
   rules:
     - if: '$CI_COMMIT_BRANCH == "main"'
