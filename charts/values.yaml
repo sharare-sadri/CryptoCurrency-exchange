@@ -1,13 +1,16 @@
+# Forces all resource names to a clean "crypto-exchange"
 fullnameOverride: "crypto-exchange"
+
 # =========================
 # Django Application Values
 # =========================
 replicaCount: 1
 
 image:
-  repository: shararehsadri/crypto-exchange
-  pullPolicy: IfNotPresent
-  tag: "0.0.1"
+  # This points to the local image you build with 'docker build'
+  repository: crypto-exchange
+  pullPolicy: Never # Force Kubernetes to use the local image
+  tag: "local-dev"
 
 service:
   type: ClusterIP
@@ -17,7 +20,7 @@ ingress:
   enabled: true
   className: "nginx"
   annotations:
-    # Tell NGINX to wait longer for Django to respond
+    # Increased timeouts to prevent 502 Bad Gateway errors
     nginx.ingress.kubernetes.io/proxy-connect-timeout: "300"
     nginx.ingress.kubernetes.io/proxy-read-timeout: "300"
     nginx.ingress.kubernetes.io/proxy-send-timeout: "300"
@@ -28,13 +31,14 @@ ingress:
           pathType: ImplementationSpecific
 
 # Secrets for Django
+# These are just defaults; we override them in the Helm command
 secrets:
   djangoSecretKey: "Wyy4ZwsMLW-Uoc-fMJLLTFisnJj7gM8ZWp0dkySs1x1HlpJpvIAhCElaxM7pO8HXIlU"
-  dbPassword: "P@ssw0rd123%"
+  dbPassword: Str0ng!P@ssw0rd_2025
 
 # Database connection details for Django to use
 database:
-  host: postgresql  
+  host: mydb-postgresql  
   port: 5432
   user: crypto_user
   name: crypto_db
@@ -42,24 +46,7 @@ database:
 # =========================
 # PostgreSQL Custom Values
 # =========================
-postgres:
-  enabled: true
-  appName: postgres
-  replicaCount: 1
-  
-  image:
-    repository: postgres
-    tag: "15-alpine"
-    pullPolicy: IfNotPresent
-
-  storage:
-    className: "standard"
-    size: 1Gi
-
-  auth:
-    username: crypto_user
-    database: crypto_db
-    password: Str0ng!P@ssw0rd_2025
-
-  service:
-    port: 5432
+# --- REMOVED ---
+# We are installing PostgreSQL as a SEPARATE Helm chart (helm install mydb...),
+# so this entire 'postgres:' section should be removed from this file
+# to avoid confusion and conflicts.
