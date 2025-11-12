@@ -34,5 +34,8 @@ RUN pip install --no-cache /wheels/*
 
 COPY . .
 
+# Run collectstatic during the build so files exist on startup
+RUN python manage.py collectstatic --noinput
+
 EXPOSE 8000
 CMD ["gunicorn", "--bind", "0.0.0.0:8000", "CryptoCurrencyExchange.wsgi"]

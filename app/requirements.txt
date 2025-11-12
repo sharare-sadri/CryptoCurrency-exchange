@@ -21,3 +21,4 @@ eth-account
 plotly
 django-credit-cards
 dj-database-url
+whitenoise[brotli]

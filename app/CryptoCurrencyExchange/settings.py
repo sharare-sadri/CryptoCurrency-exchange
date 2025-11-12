@@ -28,7 +28,7 @@ load_dotenv()
 SECRET_KEY = "0U18qVJY2NRwClsEszGV_SBoPKB4-oHP0t3EP418tN4"
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = os.getenv("DEBUG")
+DEBUG = False
 ALLOWED_HOSTS = ["*"]
 # ALLOWED_HOSTS = os.environ.get("DJANGO_ALLOWED_HOSTS", "localhost,127.0.0.1").split(",")
 # Application definition
@@ -60,6 +60,7 @@ Q_CLUSTER = {
 
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
+    "whitenoise.middleware.WhiteNoiseMiddleware",  
     "django.contrib.sessions.middleware.SessionMiddleware",
     "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
@@ -86,8 +87,7 @@ TEMPLATES = [
     },
 ]
 
-WSGI_APPLICATION = "Exchange.wsgi.application"
-
+WSGI_APPLICATION = "CryptoCurrencyExchange.wsgi.application"
 
 # Database
 # https://docs.djangoproject.com/en/4.1/ref/settings/#databases
@@ -106,15 +106,23 @@ WSGI_APPLICATION = "Exchange.wsgi.application"
 
 DATABASES = {
     'default': dj_database_url.config(
-        default=os.environ.get('DATABASE_URL'),
+        # Use DATABASE_URL from environment, but default to an empty string
+        default=os.environ.get('DATABASE_URL', ''), 
         conn_max_age=600,
-        ssl_require=False # Set to True if you use a managed DB with SSL later
+        ssl_require=False
     )
 }
 
-# Optional: Fail if DATABASE_URL is missing to prevent accidents
+# If DATABASE_URL was not set, default to a dummy SQLite DB for build-time.
+# This allows 'collectstatic' to run without a real database.
 if not DATABASES['default']:
-    raise RuntimeError("DATABASE_URL environment variable is not set!")
+    print("WARNING: DATABASE_URL not set. Defaulting to dummy SQLite DB for build.")
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.sqlite3',
+            'NAME': BASE_DIR / 'build-db.sqlite3',
+        }
+    }
 
 # Password validation
 # https://docs.djangoproject.com/en/4.1/ref/settings/#auth-password-validators
@@ -151,6 +159,10 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/4.1/howto/static-files/
 
 STATIC_URL = "static/"
+
+STATIC_ROOT = BASE_DIR / 'staticfiles'
+
+STATICFILES_STORAGE = "whitenoise.storage.CompressedManifestStaticFilesStorage" 
 
 MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 MEDIA_URL = '/media/'
