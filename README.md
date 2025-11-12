@@ -1,7 +1,10 @@
 # CryptoCurrency-exchange
 
 ## Proposal: Minimalist Kubernetes Deployment
-This proposal outlines a fast, scalable, and automated infrastructure for the CryptoCurrencyExchange web application. The design prioritizes industry-standard tools for a minimal, robust setup that can be deployed in 1-2 days.
+This proposal outlines a cloud-native, scalable, and automated infrastructure for the
+CryptoCurrencyExchange application. The objective is to migrate the existing Django monolith
+to a Kubernetes-based environment. The proposed solution prioritizes industry-standard, open-
+source tools to ensure reliability, maintainability, and rapid deployment.
 
 # Schematic Design
 
@@ -12,11 +15,11 @@ The architecture is designed for simplicity and scalability within a Kubernetes 
 ---
 
 ## Traffic Flow
-User requests hit a **Load Balancer**, which is managed by an **NGINX Ingress Controller**.  
+User requests to a **Load Balancer**,"http://crypto.minikube" which is managed by an **NGINX Ingress Controller**.  
 The Ingress routes traffic to the appropriate **Django App Service**, which in turn distributes it among the stateless **Django Pods**.
 
 ---
-
+./
 ## Application Backend
 The **Django application** runs as a **Kubernetes Deployment**, allowing for easy scaling and rolling updates.
 
@@ -33,6 +36,7 @@ A **Read Replica** can be easily added later for scalability.
 **GitHub Actions** watches the main branch.  
 On a push, it builds a new Docker image, pushes it to a container registry, and uses **Helm** to deploy the new version to the cluster automatically.
 
+**GitLab CI/CD** watches for commits. On every push, it automatically runs a lint stage to validate the Helm chart. On a push to the main branch, it then runs a build stage to create a new Docker image and push it to a container registry, followed by a deploy stage that uses Helm to deploy the new version to the cluster.
 ---
 
 ## Observability
@@ -42,7 +46,7 @@ On a push, it builds a new Docker image, pushes it to a container registry, and 
 ---
 
 ## Backup
-A **Kubernetes CronJob** runs a daily script to perform a `pg_dump` of the database and upload it to an **S3-compatible object store**.
+A **Kubernetes CronJob** runs a daily script to perform a `pg_dump` of the database and upload it to an **pvc-storage** .
 
 
 ## Selected Solutions
@@ -266,7 +270,7 @@ Here is a breakdown of the key components of the system's architecture.
 
 ---
 
-## 1. Presentation & Routing Layer 🚦
+## 1. Presentation & Routing Layer 
 
 This layer is the entry point for all user traffic.
 
@@ -279,7 +283,7 @@ This layer is the entry point for all user traffic.
 
 ---
 
-## 2. Application Layer 🚀
+## 2. Application Layer 
 
 This is where your application's business logic lives.
 
@@ -300,7 +304,7 @@ This is where your application's business logic lives.
 
 ---
 
-## 3. Data Layer 💾
+## 3. Data Layer 
 
 This layer is responsible for persistent data storage.
 
@@ -317,7 +321,7 @@ This layer is responsible for persistent data storage.
 
 ---
 
-## 4. Automation & CI/CD Layer ⚙️
+## 4. Automation & CI/CD Layer 
 
 This layer automates the build and deployment process.
 
@@ -330,7 +334,7 @@ This layer automates the build and deployment process.
 
 ---
 
-## 5. Observability Layer 📊
+## 5. Observability Layer 
 
 This layer provides insights into the health and performance of the system.
 
@@ -344,7 +348,7 @@ This layer provides insights into the health and performance of the system.
 
 ---
 
-## 6. Backup & Recovery Layer 🛡️
+## 6. Backup & Recovery Layer 
 
 This ensures data safety and disaster recovery.
 
@@ -355,10 +359,10 @@ This ensures data safety and disaster recovery.
   The CronJob runs a pod containing a script that connects to the PostgreSQL database, performs a full backup using `pg_dump`, and uploads the compressed backup file to a secure, external location like an **S3 bucket**.
 
 
-## how to run
+## How to run
 
 
-# Local Development Setup 🚀
+# Local Development Setup 
 
 Follow these steps to run the entire stack on your local machine using **Minikube**.
 
@@ -485,7 +489,7 @@ Update Hosts File: Add the following line to your /etc/hosts file:
 
 ## Access the Application
 Open your browser and navigate to:  
-👉 **[http://crypto.minikube](http://crypto.minikube)**
+**[http://crypto.minikube](http://crypto.minikube)**
 
 ---
 
@@ -497,7 +501,7 @@ kubectl port-forward svc/prometheus-grafana 8080:80 -n monitoring
 ```
 
 Then open your browser and go to:
-👉 http://localhost:8080
+ http://localhost:8080
 
 Default Login Credentials:
 
