@@ -7,6 +7,8 @@ This proposal outlines a fast, scalable, and automated infrastructure for the Cr
 
 The architecture is designed for simplicity and scalability within a Kubernetes environment.
 
+
+![Schematic Diagram](application-architecture.png)
 ---
 
 ## Traffic Flow
